@@ -6,37 +6,22 @@ export async function GET(request: NextRequest) {
     const sessionToken = request.cookies.get('admin-session')?.value
 
     if (!sessionToken) {
-      return NextResponse.json(
-        { error: 'No session found' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'No session found' }, { status: 401 })
     }
 
-    const admin = await validateAdminSession(sessionToken)
+    const session = await validateAdminSession(sessionToken)
 
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Invalid or expired session' },
-        { status: 401 }
-      )
+    if (!session || !session.admin) {
+      return NextResponse.json({ error: 'Invalid or expired session' }, { status: 401 })
     }
+
+    const { id, firstName, lastName, email, role, lastLoginAt } = session.admin
 
     return NextResponse.json({
-      admin: {
-        id: admin.id,
-        firstName: admin.firstName,
-        lastName: admin.lastName,
-        email: admin.email,
-        role: admin.role,
-        lastLoginAt: admin.lastLoginAt,
-      },
+      admin: { id, firstName, lastName, email, role, lastLoginAt },
     })
   } catch (error) {
     console.error('Session validation error:', error)
-    
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
