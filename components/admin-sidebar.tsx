@@ -62,8 +62,8 @@ export function AdminSidebar() {
             <Building2 className="h-6 w-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">BankAdmin</h2>
-            <p className="text-sm text-muted-foreground">Super Admin Portal</p>
+            <h2 className="text-lg font-semibold">SilverCrest Bank</h2>
+            <p className="text-sm text-muted-foreground">Admin Portal</p>
           </div>
         </div>
       </SidebarHeader>
