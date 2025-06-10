@@ -1,8 +1,17 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Users, CreditCard, Wallet, BarChart3, Settings, LogOut, Building2 } from "lucide-react"
+import {
+  LayoutDashboard,
+  Users,
+  CreditCard,
+  BarChart3,
+  Settings,
+  LogOut,
+  Building2,
+} from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -19,40 +28,31 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const navigationItems = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    href: "/dashboard",
-  },
-  {
-    title: "Customer Management",
-    icon: Users,
-    href: "/dashboard/customers",
-  },
-  {
-    title: "Transaction History",
-    icon: CreditCard,
-    href: "/dashboard/transactions",
-  },
-  // {
-  //   title: "Admin Wallets",
-  //   icon: Wallet,
-  //   href: "/dashboard/wallets",
-  // },
-  {
-    title: "Analytics",
-    icon: BarChart3,
-    href: "/dashboard/analytics",
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    href: "/dashboard/settings",
-  },
+  { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
+  { title: "Customer Management", icon: Users, href: "/dashboard/customers" },
+  { title: "Transaction History", icon: CreditCard, href: "/dashboard/transactions" },
+  { title: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+  { title: "Settings", icon: Settings, href: "/dashboard/settings" },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const [admin, setAdmin] = useState<null | { firstName: string; lastName: string; email: string }>(null)
+
+  useEffect(() => {
+    async function fetchAdmin() {
+      try {
+        const res = await fetch("/api/admin/me")
+        if (!res.ok) throw new Error("Session fetch failed")
+        const data = await res.json()
+        setAdmin(data.admin)
+      } catch (err) {
+        console.error("Failed to fetch admin session", err)
+      }
+    }
+
+    fetchAdmin()
+  }, [])
 
   return (
     <Sidebar className="border-r">
@@ -91,12 +91,19 @@ export function AdminSidebar() {
       <SidebarFooter className="p-4">
         <div className="flex items-center gap-3 mb-4">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder.svg?height=32&width=32" />
-            <AvatarFallback>SA</AvatarFallback>
+            <AvatarImage src="/placeholder.svg" alt="Admin avatar" />
+            <AvatarFallback>
+              {admin?.firstName?.[0] ?? "A"}
+              {admin?.lastName?.[0] ?? "D"}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Super Admin</p>
-            <p className="text-xs text-muted-foreground truncate">admin@bank.com</p>
+            <p className="text-sm font-medium truncate">
+              {admin ? `${admin.firstName} ${admin.lastName}` : "Loading..."}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {admin?.email ?? "admin@bank.com"}
+            </p>
           </div>
         </div>
         <Button variant="outline" size="sm" className="w-full justify-start">
