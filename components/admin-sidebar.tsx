@@ -31,7 +31,7 @@ const navigationItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { title: "Customer Management", icon: Users, href: "/dashboard/customers" },
   { title: "Transaction History", icon: CreditCard, href: "/dashboard/transactions" },
-  { title: "Analytics", icon: BarChart3, href: "/dashboard/analytics" },
+
   { title: "Settings", icon: Settings, href: "/dashboard/settings" },
 ]
 
