@@ -7,8 +7,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Bank Admin Dashboard",
-  description: "Super Admin Dashboard for Banking Operations",
+  title: "Admin - SilverCrest Bank",
+  description: "Company Admin Dashboard for Banking Operations",
 }
 
 export default function RootLayout({
