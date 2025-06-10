@@ -1,13 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Users,
   CreditCard,
-  BarChart3,
   Settings,
   LogOut,
   Building2,
@@ -31,11 +30,11 @@ const navigationItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { title: "Customer Management", icon: Users, href: "/dashboard/customers" },
   { title: "Transaction History", icon: CreditCard, href: "/dashboard/transactions" },
-
   { title: "Settings", icon: Settings, href: "/dashboard/settings" },
 ]
 
 export function AdminSidebar() {
+  const router = useRouter()
   const pathname = usePathname()
   const [admin, setAdmin] = useState<null | { firstName: string; lastName: string; email: string }>(null)
 
@@ -53,6 +52,22 @@ export function AdminSidebar() {
 
     fetchAdmin()
   }, [])
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/admin/logout", {
+        method: "POST",
+      })
+
+      if (res.ok) {
+        router.push("/admin/login")
+      } else {
+        console.error("Logout failed")
+      }
+    } catch (err) {
+      console.error("Logout error:", err)
+    }
+  }
 
   return (
     <Sidebar className="border-r">
@@ -106,7 +121,7 @@ export function AdminSidebar() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="w-full justify-start">
+        <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
         </Button>
