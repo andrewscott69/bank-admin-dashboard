@@ -1,0 +1,381 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  firstName   String?
+  lastName    String?
+  email       String    @unique
+  password    String?
+  phoneNumber String?
+  dateOfBirth DateTime?
+  isVerified  Boolean   @default(false)
+  isOnboarded Boolean   @default(false)
+
+  occupation       String?
+  employmentStatus String?
+  annualIncome     String?
+
+  provider   String?
+  providerId String?
+
+  totalBalance    Float @default(0.0)
+  totalSavings    Float @default(0.0)
+  monthlySpending Float @default(0.0)
+
+  autoApprovedTransaction Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  // Relations
+  address            Address?
+  bankAccounts       BankAccount[]
+  cards              Card[]
+  transactions       Transaction[]
+  walletAddresses    WalletAddress[]
+  verificationTokens VerificationToken[]
+  notifications      TransactionNotification[]
+
+  preferences UserPreference?
+
+  @@map("users")
+}
+
+model Address {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  streetAddress String?
+  city          String?
+  state         String?
+  zipCode       String?
+  country       String?  @default("US")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
+}
+
+model BankAccount {
+  id                     String            @id @default(uuid())
+  userId                 String
+  accountNumber          String            @unique
+  routingNumber          String            @default("021000021")
+  accountType            BankAccountType
+  accountName            String
+  balance                Float             @default(0.0)
+  availableBalance       Float             @default(0.0)
+  status                 BankAccountStatus @default(ACTIVE)
+  currencyType           CurrencyType      @default(USD)
+  interestRate           Float             @default(0.0)
+  overdraftLimit         Float             @default(0.0)
+  hasOverdraftProtection Boolean           @default(false)
+  minimumBalance         Float             @default(0.0)
+  openedAt               DateTime          @default(now())
+  closedAt               DateTime?
+  lastActivityAt         DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @default(now()) @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  cards        Card[]
+
+  @@map("bank_accounts")
+}
+
+model Card {
+  id            String       @id @default(uuid())
+  userId        String
+  bankAccountId String?
+  name          String
+  cardNumber    String       @unique
+  expiryDate    String
+  cvv           String
+  type          CardType?
+  color         String?
+  isActive      Boolean      @default(true)
+  balance       Float        @default(0.0)
+  creditLimit   Float        @default(0.0)
+  currencyType  CurrencyType @default(USD)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount  BankAccount?  @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  transactions Transaction[]
+
+  @@map("cards")
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  userId        String
+  bankAccountId String?
+  cardId        String?
+  type          TransactionType
+  amount        Float
+  fee           Float             @default(0.0)
+  status        TransactionStatus @default(PENDING)
+  currencyType  CurrencyType      @default(USD)
+  description   String?
+  reference     String?
+  txHash        String?
+
+  fromAccount  String?
+  toAccount    String?
+  merchantName String?
+  category     String?
+
+  adminApprovalStatus AdminApprovalStatus @default(PENDING_REVIEW)
+  adminId             String?
+  adminNotes          String?
+  approvalDate        DateTime?
+  scheduledDate       DateTime?
+  processingDate      DateTime?
+  completionDate      DateTime?
+
+  // Recipient information
+  recipientName        String?
+  recipientAccount     String?
+  recipientBank        String?
+  recipientBankAddress String?
+  recipientCountry     String?
+  swiftCode            String?
+  routingNumber        String?
+  iban                 String?
+  intermediaryBank     String?
+  transferType         String?
+  estimatedArrival     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  card        Card?        @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  admin       Admin?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  notifications TransactionNotification[]
+  auditLogs     TransactionAuditLog[]
+
+  @@map("transactions")
+}
+
+model TransactionNotification {
+  id            String           @id @default(uuid())
+  transactionId String
+  userId        String
+  type          NotificationType
+  title         String
+  message       String
+  isRead        Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @default(now()) @updatedAt
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transaction_notifications")
+}
+
+model TransactionAuditLog {
+  id             String   @id @default(uuid())
+  transactionId  String
+  adminId        String?
+  action         String
+  previousStatus String?
+  newStatus      String?
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  admin       Admin?      @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@map("transaction_audit_logs")
+}
+
+model WalletAddress {
+  id           String       @id @default(uuid())
+  userId       String
+  address      String
+  currencyType CurrencyType
+  isDefault    Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_addresses")
+}
+
+model VerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  type      TokenType
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_tokens")
+}
+
+model UserPreference {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  hasTakenTour  Boolean  @default(false)
+  theme         String   @default("light")
+  language      String   @default("en")
+  notifications Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model Admin {
+  id          String    @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String    @unique
+  password    String
+  role        AdminRole @default(SUPER_ADMIN)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  // Relations
+  sessions     AdminSession[]
+  transactions Transaction[]
+  auditLogs    TransactionAuditLog[]
+
+  @@map("admins")
+}
+
+model AdminSession {
+  id        String   @id @default(uuid())
+  adminId   String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_sessions")
+}
+
+model AdminWallet {
+  id           String       @id @default(uuid())
+  address      String
+  currencyType CurrencyType
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+
+  @@map("admin_wallets")
+}
+
+// Enhanced Enums
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+enum AdminApprovalStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  REQUIRES_ADDITIONAL_INFO
+}
+
+enum NotificationType {
+  TRANSACTION_INITIATED
+  TRANSACTION_APPROVED
+  TRANSACTION_REJECTED
+  TRANSACTION_COMPLETED
+  TRANSACTION_FAILED
+  TRANSACTION_PROCESSING
+  REQUIRES_APPROVAL
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  BUSINESS_CHECKING
+  BUSINESS_SAVINGS
+  MONEY_MARKET
+  CERTIFICATE_OF_DEPOSIT
+}
+
+enum BankAccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  CLOSED
+  PENDING_APPROVAL
+}
+
+enum CurrencyType {
+  BTC
+  USDT
+  USD
+  EUR
+  GBP
+  SOL
+  CAD
+  JPY
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  PAYMENT
+  REFUND
+  INTEREST
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  PROCESSING
+  UNDER_REVIEW
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  TWO_FACTOR
+}
+
+enum CardType {
+  DEBIT
+  CREDIT
+  PREPAID
+  BUSINESS
+}
