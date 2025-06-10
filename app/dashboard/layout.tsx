@@ -17,7 +17,7 @@ export default function DashboardLayout({
         <AdminSidebar />
         <div className="flex flex-col">
           <DashboardHeader />
-          <main className="flex-1 p-6">{children}</main>
+          <main className=" p-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>
