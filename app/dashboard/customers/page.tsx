@@ -276,8 +276,8 @@ export default function CustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-900">${stats?.totalBalance?.toLocaleString() ?? "—"}</div>
-            <p className="text-xs text-purple-600 mt-1">Across all accounts</p>
+           <div className="text-3xl font-bold text-purple-900"> ${(stats?.totalBalance ?? 0).toLocaleString()}</div>
+           <p className="text-xs text-purple-600 mt-1">Across all accounts</p>
           </CardContent>
         </Card>
       </div>
