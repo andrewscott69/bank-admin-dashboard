@@ -34,11 +34,11 @@ const navigationItems = [
     icon: CreditCard,
     href: "/dashboard/transactions",
   },
-  {
-    title: "Admin Wallets",
-    icon: Wallet,
-    href: "/dashboard/wallets",
-  },
+  // {
+  //   title: "Admin Wallets",
+  //   icon: Wallet,
+  //   href: "/dashboard/wallets",
+  // },
   {
     title: "Analytics",
     icon: BarChart3,
