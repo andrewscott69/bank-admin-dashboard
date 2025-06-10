@@ -48,7 +48,7 @@ export default function SignupPage() {
       if (!res.ok) {
         setError(data.error || "Something went wrong")
       } else {
-        router.push("/login")
+        router.push("/auth/login")
       }
     } catch (err) {
       console.error(err)
