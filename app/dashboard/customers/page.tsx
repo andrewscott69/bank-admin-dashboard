@@ -407,7 +407,7 @@ const handleAddFunds = async () => {
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedCustomer(customer.id)
+                                setSelectedCustomer(customer)
                                 setAddFundsDialog(true)
                               }}
                               className="text-emerald-600 focus:text-emerald-600"
@@ -487,7 +487,7 @@ const handleAddFunds = async () => {
                 <option value="">Select an account</option>
                   {bankAccounts.map((account) => (
                 <option key={account.id} value={account.id}>
-                    {account.bankName} - ****{account.accountNumber.slice(-4)} (${account.balance.toLocaleString()})
+                    {account.accountName} - ****{account.accountNumber.slice(-4)} (${account.balance.toLocaleString()})
               </option>
               ))}
           </select>
