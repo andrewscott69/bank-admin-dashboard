@@ -121,30 +121,48 @@ export default function CustomersPage() {
   }
 
   const handleAddFunds = async () => {
-    if (!selectedCustomer || !fundAmount) return
+    if (!selectedCustomer || !fundAmount) {
+      alert("Please enter a valid amount")
+      return
+    }
+
+    const amount = Number.parseFloat(fundAmount)
+    if (isNaN(amount) || amount <= 0) {
+      alert("Please enter a valid positive amount")
+      return
+    }
 
     setAddingFunds(true)
     try {
+      console.log("Adding funds:", { customerId: selectedCustomer.id, amount })
+
       const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/add-funds`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: Number.parseFloat(fundAmount) }),
+        body: JSON.stringify({ amount }),
       })
 
-      if (!res.ok) throw new Error("Failed to add funds")
+      const data = await res.json()
+      console.log("API Response:", data)
 
-      const updatedCustomer = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || `HTTP error! status: ${res.status}`)
+      }
 
+      // Update the customer in the list
       setCustomers((prev) =>
-        prev.map((c) => (c.id === selectedCustomer.id ? { ...c, totalBalance: updatedCustomer.totalBalance } : c)),
+        prev.map((c) => (c.id === selectedCustomer.id ? { ...c, totalBalance: data.totalBalance } : c)),
       )
 
+      // Close dialog and reset form
       setAddFundsDialog(false)
       setFundAmount("")
       setSelectedCustomer(null)
+
+      alert(`Successfully added $${amount} to ${selectedCustomer.firstName} ${selectedCustomer.lastName}'s account`)
     } catch (error) {
-      alert("Error adding funds")
-      console.error(error)
+      console.error("Error adding funds:", error)
+      alert(`Error adding funds: ${error.message}`)
     } finally {
       setAddingFunds(false)
     }
@@ -276,8 +294,8 @@ export default function CustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
-           <div className="text-3xl font-bold text-purple-900"> ${(stats?.totalBalance ?? 0).toLocaleString()}</div>
-           <p className="text-xs text-purple-600 mt-1">Across all accounts</p>
+            <div className="text-3xl font-bold text-purple-900">${stats?.totalBalance?.toLocaleString() ?? "—"}</div>
+            <p className="text-xs text-purple-600 mt-1">Across all accounts</p>
           </CardContent>
         </Card>
       </div>
