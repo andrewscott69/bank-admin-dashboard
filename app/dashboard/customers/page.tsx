@@ -255,7 +255,7 @@ export default function CustomersPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-900">{stats?.total ?? "—"}</div>
+            <div className="text-3xl font-bold text-blue-900">{stats?.total ?? 0}</div>
             <p className="text-xs text-blue-600 mt-1">+12% from last month</p>
           </CardContent>
         </Card>
