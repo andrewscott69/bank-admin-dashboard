@@ -149,9 +149,12 @@ const handleAddFunds = async () => {
   setAddingFunds(true)
 
   try {
+    // Send a PATCH request to add funds
     const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/add-funds`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ amount, bankAccountId: selectedBankAccount.id }),
     })
 
@@ -159,11 +162,11 @@ const handleAddFunds = async () => {
 
     if (!res.ok) throw new Error(data.error || "Failed to add funds")
 
-    
+    // Update state with the new balance
     setCustomers((prev) =>
       prev.map((c) =>
-        c.id === selectedCustomer.id ? { ...c, totalBalance: data.user.totalBalance } : c,
-      ),
+        c.id === selectedCustomer.id ? { ...c, totalBalance: data.customer.totalBalance } : c
+      )
     )
 
     alert(`Added $${amount} to ${selectedCustomer.firstName}'s account`)
@@ -177,6 +180,7 @@ const handleAddFunds = async () => {
     setAddingFunds(false)
   }
 }
+
 
   const handleToggleAutoApproval = async (customerId: string, currentStatus: boolean) => {
     setLoadingActionId(customerId)
