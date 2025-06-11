@@ -1,90 +1,84 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: { params: { id: string } }) {
   try {
-    const { id: bankAccountId } = context.params;
-    const { amount } = await request.json();
+    const { id } = context.params
+    const body = await request.json()
+    const { amount, bankAccountId } = body
 
-    const numericAmount = Number(amount);
-    if (!numericAmount || isNaN(numericAmount) || numericAmount <= 0) {
-      return NextResponse.json(
-        { error: "Amount must be a positive number" },
-        { status: 400 }
-      );
+    if (!amount || !bankAccountId) {
+      return NextResponse.json({ error: "Amount and Bank Account ID are required" }, { status: 400 })
     }
 
-    // Fetch bank account with user
+    const numericAmount = Number(amount)
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 })
+    }
+
     const bankAccount = await prisma.bankAccount.findUnique({
       where: { id: bankAccountId },
       include: { user: true },
-    });
+    })
 
     if (!bankAccount) {
-      return NextResponse.json(
-        { error: "Bank account not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Bank account not found" }, { status: 404 })
     }
 
-    const userId = bankAccount.userId;
+    // Update the bank account balance
+    const updatedBankAccount = await prisma.bankAccount.update({
+      where: { id: bankAccountId },
+      data: {
+        balance: bankAccount.balance + numericAmount,
+        availableBalance: bankAccount.availableBalance + numericAmount,
+      },
+    })
 
-    // Perform all updates in a transaction
-    const [updatedBankAccount, updatedUser] = await prisma.$transaction([
-      prisma.bankAccount.update({
-        where: { id: bankAccountId },
-        data: {
-          balance: { increment: numericAmount },
-          availableBalance: { increment: numericAmount },
-        },
-      }),
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          totalBalance: { increment: numericAmount },
-        },
-      }),
-    ]);
+    // Recalculate user's total balance from all bank accounts
+    const userBankAccounts = await prisma.bankAccount.findMany({
+      where: { userId: bankAccount.userId },
+      select: { balance: true },
+    })
 
-    // Log the transaction
+    const totalBalance = userBankAccounts.reduce((sum, account) => sum + account.balance, 0)
+
+    const updatedUser = await prisma.user.update({
+      where: { id: bankAccount.userId },
+      data: {
+        totalBalance,
+        updatedAt: new Date(),
+      },
+    })
+
+    // Log transaction
     await prisma.transaction.create({
       data: {
-        userId,
-        bankAccountId,
+        userId: bankAccount.userId,
+        bankAccountId: bankAccount.id,
         type: "DEPOSIT",
         amount: numericAmount,
         status: "COMPLETED",
-        currencyType: bankAccount.currencyType,
-        description: `Admin added $${numericAmount} to account ${bankAccount.accountNumber}`,
+        description: `Admin added funds to bank account: $${numericAmount}`,
         adminApprovalStatus: "APPROVED",
         completionDate: new Date(),
+        currencyType: "USD",
       },
-    });
+    })
 
     return NextResponse.json({
-      success: true,
-      message: `Funds added to bank account`,
+      message: "Funds added successfully",
+      user: {
+        id: updatedUser.id,
+        name: `${updatedUser.firstName} ${updatedUser.lastName}`,
+        totalBalance: updatedUser.totalBalance,
+      },
       bankAccount: {
         id: updatedBankAccount.id,
         balance: updatedBankAccount.balance,
       },
-      user: {
-        id: updatedUser.id,
-        totalBalance: updatedUser.totalBalance,
-        name: `${updatedUser.firstName ?? ""} ${updatedUser.lastName ?? ""}`,
-      },
-    });
-  } catch (error: any) {
-    console.error("Add funds API error:", error);
-    return NextResponse.json(
-      {
-        error: "Internal Server Error",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      { status: 500 }
-    );
+    })
+  } catch (error) {
+    console.error("Add funds API error:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
 }
