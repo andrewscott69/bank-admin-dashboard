@@ -66,7 +66,8 @@ export default function CustomersPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingActionId, setLoadingActionId] = useState<string | null>(null)
-
+  const [bankAccounts, setBankAccounts] = useState([])
+  const [selectedBankAccount, setSelectedBankAccount] = useState(null)
   // Add Funds Dialog State
   const [addFundsDialog, setAddFundsDialog] = useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
@@ -89,6 +90,19 @@ export default function CustomersPage() {
 
     fetchCustomers()
   }, [])
+
+  useEffect(() => {
+  if (!selectedCustomer) return
+
+  const fetchBankAccounts = async () => {
+    const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/bank-accounts`)
+    const data = await res.json()
+    setBankAccounts(data.accounts)
+  }
+
+  fetchBankAccounts()
+}, [selectedCustomer])
+
 
   const filteredCustomers = customers.filter((customer) => {
     const name = `${customer.firstName} ${customer.lastName}`.toLowerCase()
@@ -393,7 +407,7 @@ const handleAddFunds = async () => {
                           <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuItem
                               onClick={() => {
-                                setSelectedCustomer(customer)
+                                setSelectedCustomer(customer.id)
                                 setAddFundsDialog(true)
                               }}
                               className="text-emerald-600 focus:text-emerald-600"
@@ -459,6 +473,26 @@ const handleAddFunds = async () => {
               Add funds to {selectedCustomer?.firstName} {selectedCustomer?.lastName}'s account
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="bankAccount">Select Bank Account</Label>
+              <select
+                id="bankAccount"
+                value={selectedBankAccount?.id || ""}
+                onChange={(e) => {
+                const account = bankAccounts.find((a) => a.id === e.target.value)
+                setSelectedBankAccount(account)
+                }}
+            className="w-full border rounded px-3 py-2"
+                >
+                <option value="">Select an account</option>
+                  {bankAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                    {account.bankName} - ****{account.accountNumber.slice(-4)} (${account.balance.toLocaleString()})
+              </option>
+              ))}
+          </select>
+          </div>
+
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="amount">Amount (USD)</Label>
