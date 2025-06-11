@@ -95,7 +95,7 @@ export default function CustomersPage() {
   if (!selectedCustomer) return
 
   const fetchBankAccounts = async () => {
-    const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/bank-accounts`)
+    const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}`)
     const data = await res.json()
     setBankAccounts(data.accounts)
   }
