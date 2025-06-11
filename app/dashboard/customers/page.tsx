@@ -120,53 +120,49 @@ export default function CustomersPage() {
     }
   }
 
-  const handleAddFunds = async () => {
-    if (!selectedCustomer || !fundAmount) {
-      alert("Please enter a valid amount")
-      return
-    }
-
-    const amount = Number.parseFloat(fundAmount)
-    if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid positive amount")
-      return
-    }
-
-    setAddingFunds(true)
-    try {
-      console.log("Adding funds:", { customerId: selectedCustomer.id, amount })
-
-      const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/add-funds`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      })
-
-      const data = await res.json()
-      console.log("API Response:", data)
-
-      if (!res.ok) {
-        throw new Error(data.error || `HTTP error! status: ${res.status}`)
-      }
-
-      // Update the customer in the list
-      setCustomers((prev) =>
-        prev.map((c) => (c.id === selectedCustomer.id ? { ...c, totalBalance: data.totalBalance } : c)),
-      )
-
-      // Close dialog and reset form
-      setAddFundsDialog(false)
-      setFundAmount("")
-      setSelectedCustomer(null)
-
-      alert(`Successfully added $${amount} to ${selectedCustomer.firstName} ${selectedCustomer.lastName}'s account`)
-    } catch (error) {
-      console.error("Error adding funds:", error)
-      alert(`Error adding funds: ${error.message}`)
-    } finally {
-      setAddingFunds(false)
-    }
+const handleAddFunds = async () => {
+  if (!selectedCustomer || !selectedBankAccount || !fundAmount) {
+    alert("Please enter a valid amount and select a bank account")
+    return
   }
+
+  const amount = parseFloat(fundAmount)
+  if (isNaN(amount) || amount <= 0) {
+    alert("Please enter a valid positive amount")
+    return
+  }
+
+  setAddingFunds(true)
+
+  try {
+    const res = await fetch(`/api/dashboard/customers/${selectedCustomer.id}/add-funds`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, bankAccountId: selectedBankAccount.id }),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) throw new Error(data.error || "Failed to add funds")
+
+    
+    setCustomers((prev) =>
+      prev.map((c) =>
+        c.id === selectedCustomer.id ? { ...c, totalBalance: data.user.totalBalance } : c,
+      ),
+    )
+
+    alert(`Added $${amount} to ${selectedCustomer.firstName}'s account`)
+    setFundAmount("")
+    setSelectedCustomer(null)
+    setAddFundsDialog(false)
+  } catch (err) {
+    console.error(err)
+    alert(`Error: ${err.message}`)
+  } finally {
+    setAddingFunds(false)
+  }
+}
 
   const handleToggleAutoApproval = async (customerId: string, currentStatus: boolean) => {
     setLoadingActionId(customerId)
