@@ -463,69 +463,70 @@ const handleAddFunds = async () => {
 
       {/* Add Funds Dialog */}
       <Dialog open={addFundsDialog} onOpenChange={setAddFundsDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-emerald-600" />
-              Add Funds
-            </DialogTitle>
-            <DialogDescription>
-              Add funds to {selectedCustomer?.firstName} {selectedCustomer?.lastName}'s account
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="bankAccount">Select Bank Account</Label>
-              <select
-                id="bankAccount"
-                value={selectedBankAccount?.id || ""}
-                onChange={(e) => {
-                const account = bankAccounts.find((a) => a.id === e.target.value)
-                setSelectedBankAccount(account)
-                }}
-            className="w-full border rounded px-3 py-2"
-                >
-                <option value="">Select an account</option>
-                  {bankAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                    {account.accountName} - ****{account.accountNumber.slice(-4)} (${account.balance.toLocaleString()})
-              </option>
-              ))}
-          </select>
-          </div>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2">
+        <DollarSign className="h-5 w-5 text-emerald-600" />
+        Add Funds
+      </DialogTitle>
+      <DialogDescription>
+        Add funds to {selectedCustomer?.firstName} {selectedCustomer?.lastName}'s account
+      </DialogDescription>
+    </DialogHeader>
+    <div className="space-y-2">
+      <Label htmlFor="bankAccount">Select Bank Account</Label>
+      <select
+        id="bankAccount"
+        value={selectedBankAccount?.id || ""}
+        onChange={(e) => {
+          const account = bankAccounts.find((a) => a.id === e.target.value)
+          setSelectedBankAccount(account)
+        }}
+        className="w-full border rounded px-3 py-2"
+      >
+        <option value="">Select an account</option>
+        {bankAccounts.map((account) => (
+          <option key={account.id} value={account.id}>
+            {account.accountName} - ****{account.accountNumber.slice(-4)} (${account.balance.toLocaleString()})
+          </option>
+        ))}
+      </select>
+    </div>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (USD)</Label>
-              <Input
-                id="amount"
-                type="number"
-                placeholder="0.00"
-                value={fundAmount}
-                onChange={(e) => setFundAmount(e.target.value)}
-                className="text-lg"
-              />
-            </div>
-            <div className="bg-slate-50 p-3 rounded-lg">
-              <div className="text-sm text-slate-600">Current Balance:</div>
-              <div className="text-lg font-semibold text-slate-900">
-                ${selectedCustomer?.totalBalance?.toLocaleString() ?? "0.00"}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddFundsDialog(false)} disabled={addingFunds}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddFunds}
-              disabled={!fundAmount || addingFunds}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              {addingFunds ? "Adding..." : "Add Funds"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    <div className="space-y-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="amount">Amount (USD)</Label>
+        <Input
+          id="amount"
+          type="number"
+          placeholder="0.00"
+          value={fundAmount}
+          onChange={(e) => setFundAmount(e.target.value)}
+          className="text-lg"
+        />
+      </div>
+      <div className="bg-slate-50 p-3 rounded-lg">
+        <div className="text-sm text-slate-600">Current Balance:</div>
+        <div className="text-lg font-semibold text-slate-900">
+          ${selectedCustomer?.totalBalance?.toLocaleString() ?? "0.00"}
+        </div>
+      </div>
+    </div>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setAddFundsDialog(false)} disabled={addingFunds}>
+        Cancel
+      </Button>
+      <Button
+        onClick={handleAddFunds}
+        disabled={!fundAmount || addingFunds}
+        className="bg-emerald-600 hover:bg-emerald-700"
+      >
+        {addingFunds ? "Adding..." : "Add Funds"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </div>
   )
 }
