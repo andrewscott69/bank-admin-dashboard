@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react";
 
-import { Input } from "@/components/ui/input"
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Search, Download, Filter } from "lucide-react"
+} from "@/components/ui/select";
+import { Search, Download, Filter } from "lucide-react";
 
 import {
   Table,
@@ -26,91 +26,97 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 type Transaction = {
-  id: string
-  type: string
-  amount: number
-  status: string
+  id: string;
+  type: string;
+  amount: number;
+  status: string;
   user: {
-    firstName?: string
-    lastName?: string
-    email: string
-  }
-  createdAt: string
-  currency?: string
-  description?: string
-}
+    firstName?: string;
+    lastName?: string;
+    email: string;
+  };
+  admin?: {
+    email: string;
+  } | null;
+  adminNotes?: string | null;
+  bankAccount?: {
+    id: string;
+  } | null;
+  createdAt: string;
+  currency?: string;
+  description?: string;
+};
 
 export function DataTable() {
-  const [data, setData] = useState<Transaction[]>([])
-  const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [typeFilter, setTypeFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
 
-  const [isApproving, setIsApproving] = useState<string | null>(null)
+  const [isApproving, setIsApproving] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTransactions() {
-      setLoading(true)
+      setLoading(true);
       try {
-        const res = await fetch("/api/dashboard/transactions")
-        if (!res.ok) throw new Error("Failed to fetch transactions")
-        const transactions = await res.json()
-        setData(transactions)
+        const res = await fetch("/api/dashboard/transactions");
+        if (!res.ok) throw new Error("Failed to fetch transactions");
+        const transactions = await res.json();
+        setData(transactions);
       } catch (err) {
-        console.error(err)
+        console.error(err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
 
-    fetchTransactions()
-  }, [])
+    fetchTransactions();
+  }, []);
 
   const handleApprove = async (transactionId: string) => {
-    setIsApproving(transactionId)
+    setIsApproving(transactionId);
     try {
-      const res = await fetch(`/api/admin/transactions/${transactionId}`, {
+      const res = await fetch(`/api/dashboard/transactions/${transactionId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ action: "approve" }),
-      })
+      });
 
-      if (!res.ok) throw new Error("Approval failed")
+      if (!res.ok) throw new Error("Approval failed");
 
-      const result = await res.json()
-      console.log("Approval success:", result)
+      const result = await res.json();
+      console.log("Approval success:", result);
 
-      // Update local state
       setData((prevData) =>
         prevData.map((t) =>
           t.id === transactionId
             ? { ...t, status: result.transaction.status }
             : t
         )
-      )
+      );
     } catch (err) {
-      console.error(err)
-      alert("Error approving transaction")
+      console.error(err);
+      alert("Error approving transaction");
     } finally {
-      setIsApproving(null)
+      setIsApproving(null);
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
-    let color = "gray"
+    let color = "gray";
 
-    if (status === "COMPLETED" || status === "APPROVED") color = "green"
-    else if (status === "PENDING") color = "orange"
-    else if (status === "FAILED") color = "red"
-    else if (status === "PROCESSING") color = "blue"
+    if (status === "COMPLETED" || status === "APPROVED") color = "green";
+    else if (status === "PENDING") color = "orange";
+    else if (status === "FAILED") color = "red";
+    else if (status === "PROCESSING") color = "blue";
 
     return (
       <span
@@ -118,8 +124,8 @@ export function DataTable() {
       >
         {status}
       </span>
-    )
-  }
+    );
+  };
 
   const filteredTransactions = useMemo(() => {
     return data.filter((transaction) => {
@@ -128,18 +134,22 @@ export function DataTable() {
         `${transaction.user.firstName ?? ""} ${transaction.user.lastName ?? ""}`
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        transaction.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (transaction.description ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+        transaction.user.email
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (transaction.description ?? "")
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" || transaction.status === statusFilter
+        statusFilter === "all" || transaction.status === statusFilter;
 
       const matchesType =
-        typeFilter === "all" || transaction.type === typeFilter
+        typeFilter === "all" || transaction.type === typeFilter;
 
-      return matchesSearch && matchesStatus && matchesType
-    })
-  }, [data, searchTerm, statusFilter, typeFilter])
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [data, searchTerm, statusFilter, typeFilter]);
 
   return (
     <div className="space-y-6">
@@ -160,7 +170,9 @@ export function DataTable() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Transactions
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.length}</div>
@@ -171,12 +183,13 @@ export function DataTable() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Transaction Volume</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Transaction Volume
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              $
-              {data.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
+              ${data.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+12.5%</span> from last month
@@ -185,7 +198,9 @@ export function DataTable() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Failed Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Failed Transactions
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -198,7 +213,9 @@ export function DataTable() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Pending Review
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -271,13 +288,19 @@ export function DataTable() {
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Bank Account</TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead>Admin Notes</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">{transaction.id}</TableCell>
+                    <TableCell className="font-medium">
+                      {transaction.id}
+                    </TableCell>
                     <TableCell>
                       {`${transaction.user.firstName ?? ""} ${
                         transaction.user.lastName ?? ""
@@ -287,7 +310,9 @@ export function DataTable() {
                     <TableCell>
                       {transaction.currency === "USD" ? "$" : ""}
                       {transaction.amount.toLocaleString()}
-                      {transaction.currency !== "USD" ? ` ${transaction.currency}` : ""}
+                      {transaction.currency !== "USD"
+                        ? ` ${transaction.currency}`
+                        : ""}
                     </TableCell>
                     <TableCell>{getStatusBadge(transaction.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -296,10 +321,22 @@ export function DataTable() {
                     <TableCell className="text-sm">
                       {transaction.description ?? "-"}
                     </TableCell>
+                    <TableCell className="text-sm">
+                      {transaction.bankAccount?.id ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {transaction.admin?.email ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {transaction.adminNotes ?? "-"}
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="outline"
-                        disabled={transaction.status !== "PENDING" || isApproving === transaction.id}
+                        disabled={
+                          transaction.status !== "PENDING" ||
+                          isApproving === transaction.id
+                        }
                         onClick={() => handleApprove(transaction.id)}
                       >
                         {transaction.status === "PENDING"
@@ -317,5 +354,5 @@ export function DataTable() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
