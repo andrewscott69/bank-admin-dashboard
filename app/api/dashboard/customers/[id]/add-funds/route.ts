@@ -7,7 +7,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = params;
-    const { amount } = await request.json();
+    const { amount, adminId, note } = await request.json();
 
     const numericAmount = parseFloat(amount);
     if (!numericAmount || numericAmount <= 0) {
@@ -19,7 +19,8 @@ export async function PATCH(
       select: {
         id: true,
         userId: true,
-        balance: true, 
+        balance: true,
+        currencyType: true,
       },
     });
 
@@ -30,7 +31,8 @@ export async function PATCH(
     const newBalance = account.balance + numericAmount;
     const newAvailableBalance = newBalance - 1000; 
 
-    const [updatedAccount, updatedUser] = await prisma.$transaction([
+    const [updatedAccount, updatedUser, newTransaction] = await prisma.$transaction([
+      
       prisma.bankAccount.update({
         where: { id },
         data: {
@@ -38,6 +40,8 @@ export async function PATCH(
           availableBalance: newAvailableBalance,
         },
       }),
+
+      
       prisma.user.update({
         where: { id: account.userId },
         data: {
@@ -46,12 +50,29 @@ export async function PATCH(
           },
         },
       }),
+
+      // Create deposit transaction record
+      prisma.transaction.create({
+        data: {
+          userId: account.userId,
+          bankAccountId: account.id,
+          type: "DEPOSIT",
+          amount: numericAmount,
+          status: "COMPLETED",
+          currencyType: account.currencyType,
+          description: "Bank Deposit",
+          adminId: adminId ?? null,
+          adminNotes: note ?? "Bank Teller Deposits.",
+          completionDate: new Date(),
+        },
+      }),
     ]);
 
     return NextResponse.json({
       message: "Funds added successfully",
       bankAccount: updatedAccount,
       customer: updatedUser,
+      transaction: newTransaction,
     });
   } catch (error) {
     console.error("Error adding funds:", error);
