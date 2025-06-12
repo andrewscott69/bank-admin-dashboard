@@ -1,16 +1,13 @@
-
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const id = context.params.id;
 
-    
     const bankAccount = await prisma.bankAccount.findUnique({
       where: { id },
       select: { userId: true },
@@ -35,7 +32,6 @@ export async function PATCH(
       );
     }
 
-    
     const updatedUser = await prisma.user.update({
       where: { id: bankAccount.userId },
       data: {
