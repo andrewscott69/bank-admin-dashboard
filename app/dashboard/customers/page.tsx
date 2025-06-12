@@ -85,7 +85,7 @@ export default function CustomersPage() {
   const [viewDetailsDialog, setViewDetailsDialog] = useState(false);
   const [customerBankDetails, setCustomerBankDetails] = useState<any>(null);
 
-  
+  // Add Funds Dialog State
   const [addFundsDialog, setAddFundsDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
