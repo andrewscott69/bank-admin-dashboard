@@ -43,9 +43,7 @@ type Transaction = {
     email: string;
   } | null;
   adminNotes?: string | null;
-  bankAccountId?: {
-    id: string;
-  } | null;
+  bankAccountId: string;
   createdAt: string;
   currencyType?: string;
   description?: string;
@@ -320,7 +318,7 @@ export function DataTable() {
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Bank Account</TableHead>
+                  <TableHead>BankAccount ID</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -352,7 +350,7 @@ export function DataTable() {
                       {transaction.description ?? "-"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {transaction.bankAccountId?.id ?? "-"}
+                      {transaction.bankAccountId ?? "-"}
                     </TableCell>
                     <TableCell className="space-x-2">
                       <Button
