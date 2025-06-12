@@ -1,53 +1,60 @@
-// app/api/dashboard/customers/[id]/add-funds.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = params
-    const { amount, bankAccountId } = await request.json()
+    const { id } = params;
+    const { amount } = await request.json();
 
-    if (!amount || !bankAccountId || isNaN(amount) || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount or bank account" }, { status: 400 })
+    const numericAmount = parseFloat(amount);
+    if (!numericAmount || numericAmount <= 0) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // Find the bank account and check if it belongs to the customer
-    const bankAccount = await prisma.bankAccount.findUnique({
-      where: { id: bankAccountId },
-      include: {
-        user: true, // Ensure we get the associated user
-      },
-    })
-
-    if (!bankAccount || bankAccount.user.id !== id) {
-      return NextResponse.json({ error: "Bank account not found or does not belong to the customer" }, { status: 404 })
-    }
-
-    // Add funds to the bank account balance
-    const updatedBankAccount = await prisma.bankAccount.update({
-      where: { id: bankAccountId },
-      data: {
-        balance: bankAccount.balance + amount,
-      },
-    })
-
-    // Optionally, update customer's total balance in your customer model if needed
-    const updatedCustomer = await prisma.user.update({
+    const account = await prisma.bankAccount.findUnique({
       where: { id },
-      data: {
-        totalBalance: updatedCustomer.totalBalance + amount, // assuming the user has a totalBalance field
+      select: {
+        id: true,
+        userId: true,
+        balance: true, 
       },
-    })
+    });
+
+    if (!account) {
+      return NextResponse.json({ error: "Bank account not found" }, { status: 404 });
+    }
+
+    const newBalance = account.balance + numericAmount;
+    const newAvailableBalance = newBalance - 1000; 
+
+    const [updatedAccount, updatedUser] = await prisma.$transaction([
+      prisma.bankAccount.update({
+        where: { id },
+        data: {
+          balance: newBalance,
+          availableBalance: newAvailableBalance,
+        },
+      }),
+      prisma.user.update({
+        where: { id: account.userId },
+        data: {
+          totalBalance: {
+            increment: numericAmount,
+          },
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       message: "Funds added successfully",
-      bankAccount: updatedBankAccount,
-      customer: updatedCustomer,
-    })
-
+      bankAccount: updatedAccount,
+      customer: updatedUser,
+    });
   } catch (error) {
-    console.error("Error adding funds:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    console.error("Error adding funds:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
