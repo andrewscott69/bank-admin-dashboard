@@ -1,26 +1,35 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
+import { NextResponse, NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function PATCH(request: Request, context: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params
-    const body = await request.json()
-    const { action, adminId, adminNotes } = body
+    const { id } = params; 
+    const body = await request.json();
+    const { action } = body;
 
     const originalTx = await prisma.transaction.findUnique({
       where: { id },
       include: { bankAccount: true, user: true },
-    })
+    });
 
     if (!originalTx) {
-      return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Transaction not found" },
+        { status: 404 }
+      );
     }
 
-    const { bankAccountId, userId } = originalTx
-    const totalAmount = originalTx.amount + originalTx.fee
+    const { bankAccountId, userId } = originalTx;
+    const totalAmount = originalTx.amount + originalTx.fee;
 
     if (!bankAccountId || !userId) {
-      return NextResponse.json({ error: "Transaction missing bankAccountId or userId" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Transaction missing bankAccountId or userId" },
+        { status: 400 }
+      );
     }
 
     if (action === "approve") {
@@ -31,27 +40,23 @@ export async function PATCH(request: Request, context: { params: { id: string } 
             status: "COMPLETED",
             adminApprovalStatus: "APPROVED",
             approvalDate: new Date(),
-            adminId: adminId ?? undefined,
-            adminNotes: adminNotes ?? undefined,
+            
           },
         }),
-        prisma.transactionAuditLog.create({
-          data: {
-            transactionId: id,
-            adminId: adminId ?? "system",
-            action: "APPROVE",
-            previousStatus: originalTx.status,
-            newStatus: "COMPLETED",
-            notes: adminNotes || "Approved by admin",
-          },
-        }),
-      ])
+        // Optional: Add audit logging here if needed
+      ]);
 
-      return NextResponse.json({ message: "Transaction approved and marked as completed." })
+      return NextResponse.json({
+        message: "Transaction approved and marked as completed.",
+        transaction: { id, status: "COMPLETED" },
+      });
     }
 
     if (action === "reject") {
-      const refundTxId = `REFUND${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      const refundTxId = `REFUND${Date.now()}${Math.random()
+        .toString(36)
+        .substring(2, 6)
+        .toUpperCase()}`;
 
       await prisma.$transaction([
         prisma.transaction.update({
@@ -60,8 +65,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
             status: "FAILED",
             adminApprovalStatus: "REJECTED",
             approvalDate: new Date(),
-            adminId: adminId ?? undefined,
-            adminNotes: adminNotes ?? undefined,
+           
           },
         }),
 
@@ -75,7 +79,7 @@ export async function PATCH(request: Request, context: { params: { id: string } 
             fee: 0,
             status: "COMPLETED",
             currencyType: originalTx.currencyType,
-            description: "Reversal refund for rejected transaction",
+            description: "RVSL refund",
             fromAccount: originalTx.toAccount,
             toAccount: originalTx.fromAccount,
             merchantName: originalTx.merchantName,
@@ -104,24 +108,28 @@ export async function PATCH(request: Request, context: { params: { id: string } 
         prisma.transactionAuditLog.create({
           data: {
             transactionId: id,
-            adminId: adminId ?? "system",
+           
             action: "REJECT",
             previousStatus: originalTx.status,
             newStatus: "FAILED",
-            notes: adminNotes || "Transaction rejected. Refund processed.",
+           
           },
         }),
-      ])
+      ]);
 
       return NextResponse.json({
         message: "Transaction rejected. Refund transaction created.",
         refundTransactionId: refundTxId,
-      })
+        transaction: { id, status: "FAILED" },
+      });
     }
 
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 })
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    console.error("Admin approval error:", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    console.error("Admin approval error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
