@@ -1,31 +1,57 @@
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 
-export async function PATCH(request: Request, context: { params: { id: string } }) {
+
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params
-    const body = await request.json()
-    const { autoApprovedTransaction } = body
+    const { id } = params;
 
-    if (typeof autoApprovedTransaction !== "boolean") {
-      return NextResponse.json({ error: "Invalid autoApprovedTransaction value" }, { status: 400 })
+    
+    const bankAccount = await prisma.bankAccount.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!bankAccount) {
+      return NextResponse.json(
+        { error: "Bank account not found" },
+        { status: 404 }
+      );
     }
 
-    // Update user auto approval status
+    const user = await prisma.user.findUnique({
+      where: { id: bankAccount.userId },
+      select: { autoApprovedTransaction: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id: bankAccount.userId },
       data: {
-        autoApprovedTransaction,
-        updatedAt: new Date(),
+        autoApprovedTransaction: !user.autoApprovedTransaction,
       },
-    })
+    });
 
     return NextResponse.json({
-      message: `Auto approval ${autoApprovedTransaction ? "enabled" : "disabled"} successfully`,
+      message: "Auto-approve transaction setting updated",
       autoApprovedTransaction: updatedUser.autoApprovedTransaction,
-    })
+    });
   } catch (error) {
-    console.error("Failed to toggle auto approval", error)
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+    console.error("Failed to toggle auto-approved transaction:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
