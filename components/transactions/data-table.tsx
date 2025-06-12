@@ -43,11 +43,11 @@ type Transaction = {
     email: string;
   } | null;
   adminNotes?: string | null;
-  bankAccount?: {
+  bankAccountId?: {
     id: string;
   } | null;
   createdAt: string;
-  currency?: string;
+  currencyType?: string;
   description?: string;
 };
 
@@ -60,6 +60,7 @@ export function DataTable() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isRejecting, setIsRejecting] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -110,11 +111,42 @@ export function DataTable() {
     }
   };
 
+  const handleReject = async (transactionId: string) => {
+    setIsRejecting(transactionId);
+    try {
+      const res = await fetch(`/api/dashboard/transactions/${transactionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "reject" }),
+      });
+
+      if (!res.ok) throw new Error("Rejection failed");
+
+      const result = await res.json();
+      console.log("Rejection success:", result);
+
+      setData((prevData) =>
+        prevData.map((t) =>
+          t.id === transactionId
+            ? { ...t, status: result.transaction.status }
+            : t
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error rejecting transaction");
+    } finally {
+      setIsRejecting(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     let color = "gray";
 
     if (status === "COMPLETED" || status === "APPROVED") color = "green";
-    else if (status === "PENDING") color = "orange";
+    else if (status === "PENDING") color = "amber";
     else if (status === "FAILED") color = "red";
     else if (status === "PROCESSING") color = "blue";
 
@@ -289,8 +321,6 @@ export function DataTable() {
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Bank Account</TableHead>
-                  <TableHead>Admin</TableHead>
-                  <TableHead>Admin Notes</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -308,10 +338,10 @@ export function DataTable() {
                     </TableCell>
                     <TableCell>{transaction.type}</TableCell>
                     <TableCell>
-                      {transaction.currency === "USD" ? "$" : ""}
+                      {transaction.currencyType === "USD" ? "$" : ""}
                       {transaction.amount.toLocaleString()}
-                      {transaction.currency !== "USD"
-                        ? ` ${transaction.currency}`
+                      {transaction.currencyType !== "USD"
+                        ? ` ${transaction.currencyType}`
                         : ""}
                     </TableCell>
                     <TableCell>{getStatusBadge(transaction.status)}</TableCell>
@@ -322,15 +352,9 @@ export function DataTable() {
                       {transaction.description ?? "-"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {transaction.bankAccount?.id ?? "-"}
+                      {transaction.bankAccountId?.id ?? "-"}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {transaction.admin?.email ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {transaction.adminNotes ?? "-"}
-                    </TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-2">
                       <Button
                         variant="outline"
                         disabled={
@@ -339,11 +363,21 @@ export function DataTable() {
                         }
                         onClick={() => handleApprove(transaction.id)}
                       >
-                        {transaction.status === "PENDING"
-                          ? isApproving === transaction.id
-                            ? "Approving..."
-                            : "Approve"
-                          : "No Action"}
+                        {isApproving === transaction.id
+                          ? "Approving..."
+                          : "Approve"}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        disabled={
+                          transaction.status !== "PENDING" ||
+                          isRejecting === transaction.id
+                        }
+                        onClick={() => handleReject(transaction.id)}
+                      >
+                        {isRejecting === transaction.id
+                          ? "Rejecting..."
+                          : "Reject"}
                       </Button>
                     </TableCell>
                   </TableRow>
