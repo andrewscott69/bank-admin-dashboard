@@ -48,6 +48,7 @@ import {
   TrendingUp,
   AlertCircle,
   Plus,
+  CodeIcon,
 } from "lucide-react";
 
 type Customer = {
@@ -93,6 +94,13 @@ export default function CustomersPage() {
   const [fundAmount, setFundAmount] = useState("");
   const [addingFunds, setAddingFunds] = useState(false);
 
+  const [genTrxDialogOpen, setGenTrxDialogOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
+    null
+  );
+  const [duration, setDuration] = useState("1y");
+  const [generating, setGenerating] = useState(false);
+
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -135,6 +143,33 @@ export default function CustomersPage() {
       console.error("Failed to fetch customer bank details", error);
     }
   };
+
+  const handleGenerateTransactions = async () => {
+    if (!selectedCustomerId) return;
+  
+    setGenerating(true);
+    try {
+      const res = await fetch(`/api/dashboard/customers/${selectedCustomerId}/gen-trx`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ duration }),
+      });
+  
+      if (!res.ok) throw new Error("Failed to generate transactions");
+  
+      alert("Transactions generated successfully");
+      setGenTrxDialogOpen(false);
+      setSelectedCustomerId(null);
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+    } finally {
+      setGenerating(false);
+    }
+  };
+  
 
   // useEffect(() => {
   //   if (!selectedCustomer) return;
@@ -201,25 +236,28 @@ export default function CustomersPage() {
 
   const handleAddFunds = async () => {
     if (!customerBankDetails?.id || !fundAmount) return;
-  
+
     try {
       setAddingFunds(true);
-  
-      const res = await fetch(`/api/dashboard/customers/${customerBankDetails.id}/add-funds`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: parseFloat(fundAmount) }),
-      });
-  
+
+      const res = await fetch(
+        `/api/dashboard/customers/${customerBankDetails.id}/add-funds`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: parseFloat(fundAmount) }),
+        }
+      );
+
       const data = await res.json();
-  
+
       if (!res.ok) throw new Error(data.error || "Failed to add funds");
-  
+
       setCustomerBankDetails(data.bankAccount);
       setSelectedCustomer((prev) =>
         prev ? { ...prev, totalBalance: data.customer.totalBalance } : null
       );
-  
+
       alert("Funds added successfully");
       setAddFundsDialog(false);
       setFundAmount("");
@@ -230,8 +268,6 @@ export default function CustomersPage() {
       setAddingFunds(false);
     }
   };
-  
-
 
   const handleToggleAutoApproval = async (
     customerId: string,
@@ -571,6 +607,17 @@ export default function CustomersPage() {
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete Account
                             </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setSelectedCustomerId(customer.id);
+                                setGenTrxDialogOpen(true);
+                              }}
+                              className="text-amber-600 focus:text-amber-600"
+                            >
+                              <CodeIcon className="mr-2 h-4 w-4" />
+                              Gen. trx
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -597,7 +644,6 @@ export default function CustomersPage() {
           </DialogHeader>
 
           <div className="mt-4 space-y-4">
-           
             <input
               type="hidden"
               name="bankAccountId"
@@ -727,6 +773,55 @@ export default function CustomersPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={genTrxDialogOpen} onOpenChange={setGenTrxDialogOpen}>
+  <DialogContent className="sm:max-w-md rounded-2xl p-6">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+        <CodeIcon className="h-5 w-5 text-amber-600" />
+        Generate Transactions
+      </DialogTitle>
+      <DialogDescription className="text-sm text-slate-600 mt-1">
+        Select the duration to simulate transactions for this customer.
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="space-y-4 mt-4">
+      <div>
+        <Label htmlFor="duration">Duration</Label>
+        <select
+          id="duration"
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
+          className="w-full mt-1 border rounded-lg p-2"
+        >
+          <option value="1y">1 Year</option>
+          <option value="6m">6 Months</option>
+          <option value="3m">3 Months</option>
+          <option value="1m">1 Month</option>
+        </select>
+      </div>
+    </div>
+
+    <DialogFooter className="pt-4">
+      <Button
+        variant="outline"
+        onClick={() => setGenTrxDialogOpen(false)}
+        disabled={generating}
+      >
+        Cancel
+      </Button>
+      <Button
+        className="bg-amber-600 hover:bg-amber-700 text-white"
+        onClick={handleGenerateTransactions}
+        disabled={generating}
+      >
+        {generating ? "Generating..." : "Generate"}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </div>
   );
 }
