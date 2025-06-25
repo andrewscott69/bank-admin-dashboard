@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -59,6 +65,47 @@ export function DataTable() {
 
   const [isApproving, setIsApproving] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState<string | null>(null);
+
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editDate, setEditDate] = useState("");
+
+  const openEditModal = (tx: Transaction) => {
+    setEditTx(tx);
+    setEditAmount(tx.amount.toString());
+    setEditDate(new Date(tx.createdAt).toISOString().slice(0, 16)); // format for datetime-local
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTx) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/transactions/${editTx.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "edit",
+          amount: parseFloat(editAmount),
+          createdAt: editDate,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update");
+
+      const { transaction } = await res.json();
+
+      setData((prev) =>
+        prev.map((t) =>
+          t.id === transaction.id ? { ...t, ...transaction } : t
+        )
+      );
+
+      setEditTx(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update transaction");
+    }
+  };
 
   useEffect(() => {
     async function fetchTransactions() {
@@ -377,6 +424,13 @@ export function DataTable() {
                           ? "Rejecting..."
                           : "Reject"}
                       </Button>
+
+                      <Button
+                        variant="secondary"
+                        onClick={() => openEditModal(transaction)}
+                      >
+                        Edit
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -385,6 +439,38 @@ export function DataTable() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!editTx} onOpenChange={() => setEditTx(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium">Amount</label>
+              <Input
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Date</label>
+              <Input
+                type="datetime-local"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setEditTx(null)} variant="outline">
+                Cancel
+              </Button>
+              <Button onClick={handleEditSubmit}>Save</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
