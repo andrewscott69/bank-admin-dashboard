@@ -6,6 +6,7 @@ import Link from "next/link"
 import {
   LayoutDashboard,
   Users,
+  User,
   CreditCard,
   Settings,
   LogOut,
@@ -30,6 +31,7 @@ const navigationItems = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { title: "Customer Management", icon: Users, href: "/dashboard/customers" },
   { title: "Transaction History", icon: CreditCard, href: "/dashboard/transactions" },
+  { title: "User Management", icon: User, href: "/dashboard/users" },
   { title: "Settings", icon: Settings, href: "/dashboard/settings" },
 ]
 
