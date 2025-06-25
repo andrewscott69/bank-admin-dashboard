@@ -8,7 +8,7 @@ export async function PATCH(
   try {
     const { id } = params; 
     const body = await request.json();
-    const { action } = body;
+    const { action, amount, createdAt } = body;
 
     const originalTx = await prisma.transaction.findUnique({
       where: { id },
@@ -21,6 +21,19 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    if (action === "edit") {
+      const updated = await prisma.transaction.update({
+        where: { id },
+        data: {
+          amount: amount !== undefined ? amount : originalTx.amount,
+          createdAt: createdAt ? new Date(createdAt) : originalTx.createdAt,
+        },
+      });
+
+      return NextResponse.json({ message: "Transaction updated", transaction: updated });
+    }
+
 
     const { bankAccountId, userId } = originalTx;
     const totalAmount = originalTx.amount + originalTx.fee;
