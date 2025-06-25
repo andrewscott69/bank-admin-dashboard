@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(uuid())
+  id          String    @id 
   firstName   String?
   lastName    String?
   email       String    @unique
@@ -101,6 +101,7 @@ model Card {
   expiryDate    String
   cvv           String
   type          CardType?
+  network       CardNetwork?
   color         String?
   isActive      Boolean      @default(true)
   balance       Float        @default(0.0)
@@ -379,3 +380,11 @@ enum CardType {
   PREPAID
   BUSINESS
 }
+enum CardNetwork {
+  VISA
+  MASTERCARD
+  AMEX
+  DISCOVER
+  UNKNOWN
+}
+
