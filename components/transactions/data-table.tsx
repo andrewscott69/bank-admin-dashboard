@@ -40,23 +40,22 @@ type Transaction = {
   type: string;
   amount: number;
   status: string;
+  createdAt: string;
+  currencyType?: string;
+  description?: string;
+  bankAccountId: string;
+  recipientBank?: string;
   user: {
     firstName?: string;
     lastName?: string;
     email: string;
   };
-  admin?: {
-    email: string;
-  } | null;
-  adminNotes?: string | null;
-  bankAccountId: string;
-  createdAt: string;
-  currencyType?: string;
-  description?: string;
+  recipientName?: string;
 };
 
 export function DataTable() {
   const [data, setData] = useState<Transaction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,11 +68,16 @@ export function DataTable() {
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editBankName, setEditBankName] = useState("");
+  const [editAccountName, setEditAccountName] = useState("");
+  const [editRecipientAccountName, setEditRecipientAccountName] = useState("");
 
   const openEditModal = (tx: Transaction) => {
     setEditTx(tx);
     setEditAmount(tx.amount.toString());
-    setEditDate(new Date(tx.createdAt).toISOString().slice(0, 16)); // format for datetime-local
+    setEditDate(new Date(tx.createdAt).toISOString().slice(0, 16));
+    setEditBankName(tx.recipientBank ?? "");
+    setEditRecipientAccountName(tx.recipientName ?? "");
   };
 
   const handleEditSubmit = async () => {
@@ -87,6 +91,8 @@ export function DataTable() {
           action: "edit",
           amount: parseFloat(editAmount),
           createdAt: editDate,
+          recipientBank: editBankName,
+          recipientName: editRecipientAccountName, 
         }),
       });
 
@@ -111,12 +117,17 @@ export function DataTable() {
     async function fetchTransactions() {
       setLoading(true);
       try {
-        const res = await fetch("/api/dashboard/transactions");
+        const res = await fetch(
+          "/api/dashboard/transactions?page=1&limit=1000"
+        );
         if (!res.ok) throw new Error("Failed to fetch transactions");
-        const transactions = await res.json();
-        setData(transactions);
+
+        const result = await res.json();
+        setData(result.transactions ?? []);
+        setTotalCount(result.total ?? 0);
       } catch (err) {
         console.error(err);
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -139,8 +150,6 @@ export function DataTable() {
       if (!res.ok) throw new Error("Approval failed");
 
       const result = await res.json();
-      console.log("Approval success:", result);
-
       setData((prevData) =>
         prevData.map((t) =>
           t.id === transactionId
@@ -170,8 +179,6 @@ export function DataTable() {
       if (!res.ok) throw new Error("Rejection failed");
 
       const result = await res.json();
-      console.log("Rejection success:", result);
-
       setData((prevData) =>
         prevData.map((t) =>
           t.id === transactionId
@@ -243,7 +250,6 @@ export function DataTable() {
         </Button>
       </div>
 
-      {/* Transaction Stats */}
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
@@ -252,7 +258,7 @@ export function DataTable() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data.length}</div>
+            <div className="text-2xl font-bold">{totalCount}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+8.1%</span> from last month
             </p>
@@ -303,7 +309,6 @@ export function DataTable() {
         </Card>
       </div>
 
-      {/* Filters and Search */}
       <Card>
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>
@@ -353,7 +358,6 @@ export function DataTable() {
             </Button>
           </div>
 
-          {/* Transaction Table */}
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -365,7 +369,8 @@ export function DataTable() {
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>BankAccount ID</TableHead>
+                  <TableHead>Bank Name</TableHead>
+                  <TableHead>Account Name</TableHead>
                   <TableHead>Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -373,9 +378,7 @@ export function DataTable() {
               <TableBody>
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">
-                      {transaction.id}
-                    </TableCell>
+                    <TableCell>{transaction.id}</TableCell>
                     <TableCell>
                       {`${transaction.user.firstName ?? ""} ${
                         transaction.user.lastName ?? ""
@@ -396,9 +399,9 @@ export function DataTable() {
                     <TableCell className="text-sm">
                       {transaction.description ?? "-"}
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {transaction.bankAccountId ?? "-"}
-                    </TableCell>
+                    <TableCell>{transaction.recipientBank ?? "-"}</TableCell>
+                    <TableCell>{transaction.recipientName ?? "-"}</TableCell>
+
                     <TableCell className="space-x-2">
                       <Button
                         variant="outline"
@@ -424,7 +427,6 @@ export function DataTable() {
                           ? "Rejecting..."
                           : "Reject"}
                       </Button>
-
                       <Button
                         variant="secondary"
                         onClick={() => openEditModal(transaction)}
@@ -462,6 +464,23 @@ export function DataTable() {
                 onChange={(e) => setEditDate(e.target.value)}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium">Bank Name</label>
+              <Input
+                value={editBankName}
+                onChange={(e) => setEditBankName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">
+                Recipient Account Name
+              </label>
+              <Input
+                value={editRecipientAccountName}
+                onChange={(e) => setEditRecipientAccountName(e.target.value)}
+              />
+            </div>
+
             <div className="flex justify-end gap-2">
               <Button onClick={() => setEditTx(null)} variant="outline">
                 Cancel
