@@ -6,9 +6,10 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params; 
+    const { id } = params;
     const body = await request.json();
-    const { action, amount, createdAt } = body;
+    const { action } = body;
+    
 
     const originalTx = await prisma.transaction.findUnique({
       where: { id },
@@ -26,13 +27,54 @@ export async function PATCH(
       const updated = await prisma.transaction.update({
         where: { id },
         data: {
-          amount: amount !== undefined ? amount : originalTx.amount,
-          createdAt: createdAt ? new Date(createdAt) : originalTx.createdAt,
+          amount: body.amount ?? originalTx.amount,
+          fee: body.fee ?? originalTx.fee,
+          status: body.status ?? originalTx.status,
+          currencyType: body.currencyType ?? originalTx.currencyType,
+          description: body.description ?? originalTx.description,
+          reference: body.reference ?? originalTx.reference,
+          txHash: body.txHash ?? originalTx.txHash,
+    
+          fromAccount: body.fromAccount ?? originalTx.fromAccount,
+          toAccount: body.toAccount ?? originalTx.toAccount,
+          merchantName: body.merchantName ?? originalTx.merchantName,
+          category: body.category ?? originalTx.category,
+    
+          // Recipient info
+          recipientName: body.recipientName ?? originalTx.recipientName,
+          recipientAccount: body.recipientAccount ?? originalTx.recipientAccount,
+          recipientBank: body.recipientBank ?? originalTx.recipientBank,
+          recipientBankAddress:
+            body.recipientBankAddress ?? originalTx.recipientBankAddress,
+          recipientCountry: body.recipientCountry ?? originalTx.recipientCountry,
+          swiftCode: body.swiftCode ?? originalTx.swiftCode,
+          routingNumber: body.routingNumber ?? originalTx.routingNumber,
+          iban: body.iban ?? originalTx.iban,
+          intermediaryBank: body.intermediaryBank ?? originalTx.intermediaryBank,
+          transferType: body.transferType ?? originalTx.transferType,
+          estimatedArrival: body.estimatedArrival ?? originalTx.estimatedArrival,
+    
+          // Relations (careful: must be valid UUIDs)
+          bankAccountId: body.bankAccountId ?? originalTx.bankAccountId,
+          cardId: body.cardId ?? originalTx.cardId,
+    
+          // Dates (ensure valid Date)
+          createdAt: body.createdAt ? new Date(body.createdAt) : originalTx.createdAt,
+          scheduledDate: body.scheduledDate
+            ? new Date(body.scheduledDate)
+            : originalTx.scheduledDate,
+          completionDate: body.completionDate
+            ? new Date(body.completionDate)
+            : originalTx.completionDate,
         },
       });
-
-      return NextResponse.json({ message: "Transaction updated", transaction: updated });
+    
+      return NextResponse.json({
+        message: "Transaction fully updated.",
+        transaction: updated,
+      });
     }
+    
 
 
     const { bankAccountId, userId } = originalTx;
