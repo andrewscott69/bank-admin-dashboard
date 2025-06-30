@@ -478,9 +478,7 @@ export default function CustomersPage() {
                     <TableHead className="font-semibold text-slate-700">
                       Status
                     </TableHead>
-                    <TableHead className="font-semibold text-slate-700">
-                      Auto Approval
-                    </TableHead>
+                  
                     <TableHead className="font-semibold text-slate-700">
                       Last Activity
                     </TableHead>
@@ -525,26 +523,7 @@ export default function CustomersPage() {
                       <TableCell className="py-4">
                         {getStatusBadge(customer.status, customer.isVerified)}
                       </TableCell>
-                      <TableCell className="py-4">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={customer.autoApprovedTransaction}
-                            onCheckedChange={() =>
-                              handleToggleAutoApproval(
-                                customer.id,
-                                customer.autoApprovedTransaction
-                              )
-                            }
-                            disabled={loadingActionId === customer.id}
-                            className="data-[state=checked]:bg-emerald-500"
-                          />
-                          <span className="text-xs text-slate-600">
-                            {customer.autoApprovedTransaction
-                              ? "Enabled"
-                              : "Disabled"}
-                          </span>
-                        </div>
-                      </TableCell>
+                     
                       <TableCell className="py-4 text-sm text-slate-600">
                         {customer.lastActivity}
                       </TableCell>
