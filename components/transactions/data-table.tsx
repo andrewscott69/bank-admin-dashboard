@@ -45,6 +45,7 @@ type Transaction = {
   description?: string;
   bankAccountId: string;
   recipientBank?: string;
+   userId: string;
   user: {
     firstName?: string;
     lastName?: string;
@@ -215,6 +216,7 @@ export function DataTable() {
     return data.filter((transaction) => {
       const matchesSearch =
         transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          transaction.userId.toLowerCase().includes(searchTerm.toLowerCase()) || 
         `${transaction.user.firstName ?? ""} ${transaction.user.lastName ?? ""}`
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
@@ -362,6 +364,7 @@ export function DataTable() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>User ID</TableHead>
                   <TableHead>Transaction ID</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Type</TableHead>
@@ -378,6 +381,7 @@ export function DataTable() {
               <TableBody>
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
+                    <TableCell>{transaction.userId}</TableCell>
                     <TableCell>{transaction.id}</TableCell>
                     <TableCell>
                       {`${transaction.user.firstName ?? ""} ${
