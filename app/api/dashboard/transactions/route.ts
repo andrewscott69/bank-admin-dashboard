@@ -40,6 +40,8 @@ export async function GET(req: Request) {
           iban: true,
           intermediaryBank: true,
 
+           userId: true,
+
           // User Info
           user: {
             select: {
