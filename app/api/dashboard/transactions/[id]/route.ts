@@ -179,6 +179,40 @@ export async function PATCH(
       });
     }
 
+    if (action === "force-complete") {
+      if (originalTx.status !== "PROCESSING") {
+        return NextResponse.json(
+          { error: "Only PROCESSING transactions can be force-completed" },
+          { status: 400 }
+        );
+      }
+
+      await prisma.$transaction([
+        prisma.transaction.update({
+          where: { id },
+          data: {
+            status: "COMPLETED",
+            completionDate: new Date(),
+          },
+        }),
+
+        prisma.transactionAuditLog.create({
+          data: {
+            transactionId: id,
+            action: "FORCE_COMPLETE",
+            previousStatus: originalTx.status,
+            newStatus: "COMPLETED",
+            notes: "Manually completed by admin after processing did not finalize automatically.",
+          },
+        }),
+      ]);
+
+      return NextResponse.json({
+        message: "Transaction forcefully marked as completed.",
+        transaction: { id, status: "COMPLETED" },
+      });
+    }
+
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Admin approval error:", error);

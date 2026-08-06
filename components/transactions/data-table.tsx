@@ -65,6 +65,7 @@ export function DataTable() {
 
   const [isApproving, setIsApproving] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState<string | null>(null);
+  const [isForceCompleting, setIsForceCompleting] = useState<string | null>(null);
 
   const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [editAmount, setEditAmount] = useState("");
@@ -192,6 +193,35 @@ export function DataTable() {
       alert("Error rejecting transaction");
     } finally {
       setIsRejecting(null);
+    }
+  };
+
+  const handleForceComplete = async (transactionId: string) => {
+    setIsForceCompleting(transactionId);
+    try {
+      const res = await fetch(`/api/dashboard/transactions/${transactionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "force-complete" }),
+      });
+
+      if (!res.ok) throw new Error("Force complete failed");
+
+      const result = await res.json();
+      setData((prevData) =>
+        prevData.map((t) =>
+          t.id === transactionId
+            ? { ...t, status: result.transaction.status }
+            : t
+        )
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Error force-completing transaction");
+    } finally {
+      setIsForceCompleting(null);
     }
   };
 
@@ -430,6 +460,18 @@ export function DataTable() {
                         {isRejecting === transaction.id
                           ? "Rejecting..."
                           : "Reject"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={
+                          transaction.status !== "PROCESSING" ||
+                          isForceCompleting === transaction.id
+                        }
+                        onClick={() => handleForceComplete(transaction.id)}
+                      >
+                        {isForceCompleting === transaction.id
+                          ? "Completing..."
+                          : "Force Complete"}
                       </Button>
                       <Button
                         variant="secondary"
