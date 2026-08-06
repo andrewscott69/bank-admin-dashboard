@@ -80,13 +80,6 @@ export async function PATCH(
     const { bankAccountId, userId } = originalTx;
     const totalAmount = originalTx.amount + originalTx.fee;
 
-    if (!bankAccountId || !userId) {
-      return NextResponse.json(
-        { error: "Transaction missing bankAccountId or userId" },
-        { status: 400 }
-      );
-    }
-
     if (action === "approve") {
       await prisma.$transaction([
         prisma.transaction.update({
@@ -108,6 +101,13 @@ export async function PATCH(
     }
 
     if (action === "reject") {
+      if (!bankAccountId || !userId) {
+        return NextResponse.json(
+          { error: "Transaction missing bankAccountId or userId" },
+          { status: 400 }
+        );
+      }
+
       const refundTxId = `REFUND${Date.now()}${Math.random()
         .toString(36)
         .substring(2, 6)
